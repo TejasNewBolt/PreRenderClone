@@ -3,6 +3,9 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import crypto from 'crypto';
 
+// This route needs to be dynamic because it uses cookies
+export const dynamic = 'force-dynamic';
+
 // Initialize Supabase client
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
