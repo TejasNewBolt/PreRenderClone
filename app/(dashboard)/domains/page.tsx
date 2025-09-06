@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { Plus, Globe, CheckCircle, XCircle, AlertCircle, Trash2, ExternalLink } from 'lucide-react'
 import { Site } from '@/types/domain'
 
@@ -184,7 +185,7 @@ export default function DomainsPage() {
                   {sites.map((site) => (
                     <tr key={site.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
+                        <Link href={`/domains/${site.id}`} className="flex items-center hover:text-blue-600">
                           <Globe className="h-5 w-5 text-gray-400 mr-3" />
                           <div>
                             <div className="text-sm font-medium text-gray-900">
@@ -194,7 +195,7 @@ export default function DomainsPage() {
                               {site.origin}
                             </div>
                           </div>
-                        </div>
+                        </Link>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
@@ -211,15 +212,17 @@ export default function DomainsPage() {
                         <button
                           onClick={() => handleDeleteDomain(site.id)}
                           className="text-red-600 hover:text-red-900 mr-4"
+                          title="Delete domain"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
-                        <a
+                        <Link
                           href={`/domains/${site.id}`}
                           className="text-blue-600 hover:text-blue-900"
+                          title="View details"
                         >
                           <ExternalLink className="h-4 w-4 inline" />
-                        </a>
+                        </Link>
                       </td>
                     </tr>
                   ))}
