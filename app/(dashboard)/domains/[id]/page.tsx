@@ -15,6 +15,7 @@ import {
   Trash2
 } from 'lucide-react'
 import { Site, VerificationInstruction } from '@/types/domain'
+import RepositoryConnection from '@/components/RepositoryConnection'
 
 export default function DomainDetailPage() {
   const params = useParams()
@@ -379,6 +380,13 @@ export default function DomainDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Repository Connection Section */}
+      <RepositoryConnection 
+        siteId={siteId} 
+        domain={site.domain}
+        isVerified={site.verification_status === 'verified'}
+      />
 
       {/* Error Display */}
       {error && (
