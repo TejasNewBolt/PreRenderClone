@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 
 export async function GET(request: NextRequest) {
@@ -10,14 +9,6 @@ export async function GET(request: NextRequest) {
     
     if (!githubToken) {
       return NextResponse.json({ error: 'Not authenticated with GitHub' }, { status: 401 });
-    }
-
-    // Get current user from Supabase
-    const supabase = createRouteHandlerClient({ cookies });
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
     // Fetch user's repositories from GitHub
