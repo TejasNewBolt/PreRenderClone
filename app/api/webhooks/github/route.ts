@@ -2,12 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 
-// Initialize Supabase client with service role key for admin operations
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 // Verify GitHub webhook signature
 function verifyWebhookSignature(
   payload: string,
@@ -45,6 +39,23 @@ export async function POST(request: NextRequest) {
     if (!repoFullName) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
     }
+
+    // Initialize Supabase client if keys are available
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseKey) {
+      console.warn('Supabase configuration missing - webhook will only log events');
+      console.log('Webhook event:', event, 'Repository:', repoFullName);
+      
+      // Return success even without database updates
+      return NextResponse.json({ 
+        success: true,
+        message: `Event ${event} logged (database not configured)`,
+      });
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Find the site by repository
     const { data: connection, error: connectionError } = await supabase
