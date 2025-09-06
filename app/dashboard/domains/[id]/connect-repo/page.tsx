@@ -2,11 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, GitBranch, Link, CheckCircle, XCircle } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { Loader2, GitBranch, Link, CheckCircle } from 'lucide-react';
 
 interface Repository {
   id: number;
@@ -27,7 +23,6 @@ export default function ConnectRepoPage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { toast } = useToast();
   
   const siteId = params.id as string;
   const success = searchParams.get('success') === 'true';
@@ -37,6 +32,7 @@ export default function ConnectRepoPage() {
   const [selectedBranch, setSelectedBranch] = useState<string>('main');
   const [isLoading, setIsLoading] = useState(true);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (success) {
@@ -45,7 +41,7 @@ export default function ConnectRepoPage() {
       // Redirect to domain page if not coming from OAuth
       router.push(`/dashboard/domains/${siteId}`);
     }
-  }, [success, siteId]);
+  }, [success, siteId, router]);
 
   const fetchRepositories = async () => {
     try {
@@ -58,11 +54,7 @@ export default function ConnectRepoPage() {
       setRepositories(data.repositories);
     } catch (error) {
       console.error('Error fetching repositories:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to fetch your repositories. Please try again.',
-        variant: 'destructive',
-      });
+      setError('Failed to fetch your repositories. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -70,15 +62,12 @@ export default function ConnectRepoPage() {
 
   const handleConnect = async () => {
     if (!selectedRepo) {
-      toast({
-        title: 'Select a repository',
-        description: 'Please select a repository to connect.',
-        variant: 'destructive',
-      });
+      setError('Please select a repository to connect.');
       return;
     }
 
     setIsConnecting(true);
+    setError(null);
     
     try {
       const repo = repositories.find(r => r.fullName === selectedRepo);
@@ -102,20 +91,11 @@ export default function ConnectRepoPage() {
         throw new Error(data.error || 'Failed to connect repository');
       }
 
-      toast({
-        title: 'Success',
-        description: 'Repository connected successfully!',
-      });
-
       // Redirect back to domain page
       router.push(`/dashboard/domains/${siteId}`);
     } catch (error) {
       console.error('Error connecting repository:', error);
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to connect repository',
-        variant: 'destructive',
-      });
+      setError(error instanceof Error ? error.message : 'Failed to connect repository');
     } finally {
       setIsConnecting(false);
     }
@@ -137,64 +117,66 @@ export default function ConnectRepoPage() {
 
   return (
     <div className="container max-w-4xl mx-auto py-8">
-      <Card>
-        <CardHeader>
-          <CardTitle>Connect Repository</CardTitle>
-          <CardDescription>
+      <div className="bg-white rounded-lg border shadow-sm">
+        <div className="p-6 border-b">
+          <h2 className="text-2xl font-semibold">Connect Repository</h2>
+          <p className="text-gray-600 mt-2">
             Select a repository to connect to your site for automatic deployments
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
+          </p>
+        </div>
+        
+        <div className="p-6 space-y-6">
           {success && (
-            <div className="flex items-center gap-2 text-green-600">
+            <div className="flex items-center gap-2 text-green-600 bg-green-50 p-3 rounded-md">
               <CheckCircle className="h-5 w-5" />
               <span>Successfully authenticated with GitHub</span>
             </div>
           )}
 
+          {error && (
+            <div className="bg-red-50 text-red-600 p-3 rounded-md">
+              {error}
+            </div>
+          )}
+
           <div className="space-y-2">
-            <label className="text-sm font-medium">Repository</label>
-            <Select value={selectedRepo} onValueChange={setSelectedRepo}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a repository" />
-              </SelectTrigger>
-              <SelectContent>
-                {repositories.map((repo) => (
-                  <SelectItem key={repo.id} value={repo.fullName}>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{repo.name}</span>
-                      {repo.private && (
-                        <span className="text-xs bg-gray-100 px-2 py-0.5 rounded">Private</span>
-                      )}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <label className="block text-sm font-medium text-gray-700">
+              Repository
+            </label>
+            <select
+              value={selectedRepo}
+              onChange={(e) => setSelectedRepo(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select a repository</option>
+              {repositories.map((repo) => (
+                <option key={repo.id} value={repo.fullName}>
+                  {repo.name} {repo.private && '(Private)'}
+                </option>
+              ))}
+            </select>
           </div>
 
           {selectedRepository && (
             <>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Default Branch</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Default Branch
+                </label>
                 <div className="flex items-center gap-2">
                   <GitBranch className="h-4 w-4 text-gray-500" />
-                  <Select 
-                    value={selectedBranch || selectedRepository.defaultBranch} 
-                    onValueChange={setSelectedBranch}
+                  <select
+                    value={selectedBranch || selectedRepository.defaultBranch}
+                    onChange={(e) => setSelectedBranch(e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={selectedRepository.defaultBranch}>
-                        {selectedRepository.defaultBranch}
-                      </SelectItem>
-                      <SelectItem value="main">main</SelectItem>
-                      <SelectItem value="master">master</SelectItem>
-                      <SelectItem value="develop">develop</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <option value={selectedRepository.defaultBranch}>
+                      {selectedRepository.defaultBranch}
+                    </option>
+                    <option value="main">main</option>
+                    <option value="master">master</option>
+                    <option value="develop">develop</option>
+                  </select>
                 </div>
               </div>
 
@@ -231,17 +213,18 @@ export default function ConnectRepoPage() {
             </>
           )}
 
-          <div className="flex justify-end gap-4">
-            <Button
-              variant="outline"
+          <div className="flex justify-end gap-4 pt-4">
+            <button
               onClick={handleCancel}
               disabled={isConnecting}
+              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 disabled:opacity-50"
             >
               Cancel
-            </Button>
-            <Button
+            </button>
+            <button
               onClick={handleConnect}
               disabled={!selectedRepo || isConnecting}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
             >
               {isConnecting ? (
                 <>
@@ -251,10 +234,10 @@ export default function ConnectRepoPage() {
               ) : (
                 'Connect Repository'
               )}
-            </Button>
+            </button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
